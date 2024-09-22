@@ -15,10 +15,10 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
 // Upload new images
-router.post('/upload', upload.array('images', 5), async (req, res) => {
+router.post('/upload', upload.array('images', 10), async (req, res) => {
   try {
     const imageCount = await Image.countDocuments();
     if (imageCount + req.files.length > 30) {
@@ -27,7 +27,7 @@ router.post('/upload', upload.array('images', 5), async (req, res) => {
 
     const newImages = req.files.map(file => ({
       filename: file.filename,
-      path: file.path,
+      path: file.path.replace(/^uploads\//, ''), // Store relative path
     }));
 
     const images = await Image.insertMany(newImages);
@@ -42,7 +42,11 @@ router.post('/upload', upload.array('images', 5), async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const images = await Image.find();
-    res.json(images);
+    const fullImages = images.map(image => ({
+      ...image._doc,
+      path: `${req.protocol}://${req.get('host')}/uploads/${image.path}` // Construct full URL
+    }));
+    res.json(fullImages);
   } catch (err) {
     console.error('Error fetching images:', err);
     res.status(500).json({ message: err.message });
@@ -56,8 +60,11 @@ router.delete('/:id', async (req, res) => {
     if (!image) return res.status(404).json({ message: 'Image not found' });
 
     // Delete image file from server
-    fs.unlink(image.path, async (err) => {
+    fs.unlink(path.join(__dirname, '../uploads', image.path), async (err) => {
       if (err) {
+        if (err.code === 'ENOENT') {
+          return res.status(404).json({ message: 'File not found on server' });
+        }
         console.error('Error deleting file:', err);
         return res.status(500).json({ message: 'Error deleting file' });
       }

@@ -30,7 +30,7 @@ app.use(morgan('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/uploads/logos', express.static(path.join(__dirname, 'uploads/logos')));
+// app.use('/uploads/logos', express.static(path.join(__dirname, 'uploads/logos')));
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI, {
