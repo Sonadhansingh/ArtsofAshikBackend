@@ -6,7 +6,7 @@ const router = express.Router();
 
 // Ensure the uploads directory exists
 const uploadDir = path.join(__dirname, '/uploads/videos');
-console.log('uploadDir', uploadDir);
+// console.log('uploadDir', uploadDir);
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -30,9 +30,16 @@ router.post('/add', upload.single('video'), async (req, res) => {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const videoUrl = req.file.path.replace(/\\/g, '/');
+    // Convert the video file to Base64
+    const videoPath = path.join(uploadDir, req.file.filename);
+    const videoData = fs.readFileSync(videoPath);
+    const videoBase64 = videoData.toString('base64');
+
+    // Construct the video URL based on your server's structure
+    const videoUrl = `data:video/mp4;base64,${videoBase64}`;
     res.json({ videoUrl });
   } catch (error) {
+    console.error('Error:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -55,8 +62,11 @@ router.put('/update', upload.single('video'), async (req, res) => {
       });
     });
 
-    const videoUrl = req.file.path.replace(/\\/g, '/');
-    res.json({ videoUrl });
+    const videoPath = path.join(uploadDir, req.file.filename);
+    const videoData = fs.readFileSync(videoPath);
+    const videoBase64 = videoData.toString('base64');
+
+    res.json({ videoUrl: `data:video/mp4;base64,${videoBase64}` });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -79,7 +89,11 @@ router.get('/latest', (req, res) => {
     }
 
     const latestVideo = files[0];
-    const videoUrl = `${process.env.BASE_URL}/uploads/videos/${latestVideo}`;
+    const videoPath = path.join(uploadDir, latestVideo);
+    const videoData = fs.readFileSync(videoPath);
+    const videoBase64 = videoData.toString('base64');
+    const videoUrl = `data:video/mp4;base64,${videoBase64}`;
+
     res.json({ videoUrl });
   });
 });
