@@ -27,10 +27,11 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 // Use CORS with specific origin
 app.use(cors({
-  origin: 'http://localhost:3001', 
+  origin: ['http://localhost:3000', 'http://localhost:3001'], 
   methods: ['GET', 'POST', 'PUT', 'DELETE'], 
   credentials: true, 
 }));
+app.use(express.urlencoded({ extended: true })); // Add this line
 app.use(morgan('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
