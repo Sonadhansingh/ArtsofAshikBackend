@@ -9,7 +9,7 @@ const router = express.Router();
 AWS.config.update({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: 'eu-north-1', // Your S3 bucket region
+  region: process.env.AWS_REGION, // Your S3 bucket region
 });
 
 // Setup multer to store files in memory
