@@ -80,7 +80,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// PUT (update) content
+// PUT (update) environment
 router.put('/:id', upload.fields([
   { name: 'mainImages', maxCount: 1 },
   { name: 'images', maxCount: 30 },
@@ -90,49 +90,61 @@ router.put('/:id', upload.fields([
     const { id } = req.params;
     const { title, description } = req.body;
 
-    // Fetch the existing content
-    const content = await Content.findById(id);
+    // Fetch the existing environment data
+    const environment = await Environment.findById(id);
 
-    if (!content) {
-      return res.status(404).json({ message: 'Content not found.' });
+    if (!environment) {
+      return res.status(404).json({ message: 'Environment not found.' });
     }
 
-    // Prepare updated data
-    const updateData = { title, description };
+    // Initialize the updated data object
+    const updatedData = {
+      title: title || environment.title,
+      description: description || environment.description,
+    };
 
-    // Replace main image if a new one is uploaded
-    if (req.files.mainImages && content.mainImages) {
-      const oldMainImageKey = content.mainImages.split('Character/')[1];
-      await deleteFileFromS3(oldMainImageKey);
-      updateData.mainImages = await uploadFile(req.files.mainImages[0], 'mainImages');
-    }
-
-    // Replace images if new ones are uploaded
-    if (req.files.images && content.images.length > 0) {
-      for (const oldImageUrl of content.images) {
-        const oldImageKey = oldImageUrl.split('Character/')[1];
-        await deleteFileFromS3(oldImageKey);
+    // Handle main image update
+    if (req.files.mainImages) {
+      if (environment.mainImages) {
+        const oldMainImageKey = environment.mainImages.split('Environment/')[1];
+        await deleteFileFromS3(oldMainImageKey);
       }
-      updateData.images = await Promise.all(req.files.images.map(file => uploadFile(file, 'images')));
+      updatedData.mainImages = await uploadFile(req.files.mainImages[0], 'mainImages');
     }
 
-    // Replace videos if new ones are uploaded
-    if (req.files.videos && content.videos.length > 0) {
-      for (const oldVideoUrl of content.videos) {
-        const oldVideoKey = oldVideoUrl.split('Character/')[1];
-        await deleteFileFromS3(oldVideoKey);
+    // Handle images update
+    if (req.files.images) {
+      if (environment.images && environment.images.length > 0) {
+        for (const oldImageUrl of environment.images) {
+          const oldImageKey = oldImageUrl.split('Environment/')[1];
+          await deleteFileFromS3(oldImageKey);
+        }
       }
-      updateData.videos = await Promise.all(req.files.videos.map(file => uploadFile(file, 'videos')));
+      updatedData.images = await Promise.all(req.files.images.map(file => uploadFile(file, 'images')));
     }
 
-    // Update the content with new data
-    const updatedContent = await Content.findByIdAndUpdate(id, updateData, { new: true });
-    res.json(updatedContent);
+    // Handle videos update
+    if (req.files.videos) {
+      if (environment.videos && environment.videos.length > 0) {
+        for (const oldVideoUrl of environment.videos) {
+          const oldVideoKey = oldVideoUrl.split('Environment/')[1];
+          await deleteFileFromS3(oldVideoKey);
+        }
+      }
+      updatedData.videos = await Promise.all(req.files.videos.map(file => uploadFile(file, 'videos')));
+    }
+
+    // Update the environment document
+    const updatedEnvironment = await Environment.findByIdAndUpdate(id, updatedData, { new: true });
+
+    // Send the updated environment as the response
+    res.json(updatedEnvironment);
   } catch (error) {
-    console.error('Error updating content:', error);
-    res.status(500).json({ message: 'Failed to update content.' });
+    console.error('Error updating environment:', error);
+    res.status(500).json({ message: 'Failed to update environment.' });
   }
 });
+
 
 // DELETE content and associated files from S3
 router.delete('/:id', async (req, res) => {
