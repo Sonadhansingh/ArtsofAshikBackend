@@ -1,2 +1,16 @@
+# Ignore .env file
 .env
-/node_modules
+aws-config.js
+
+# Node modules directory
+node_modules/
+
+# Log files
+*.log
+
+# OS-specific files (for macOS, Linux, and Windows)
+.DS_Store
+Thumbs.db
+
+# .vscode settings directory
+.vscode/

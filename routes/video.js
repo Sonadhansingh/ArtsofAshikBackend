@@ -75,7 +75,7 @@ router.delete('/delete', async (req, res) => {
 router.get('/latest', async (req, res) => {
   try {
     const params = {
-      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Bucket: 'artsofashik',
       Prefix: 'MainpageVideo/',
     };
 
@@ -84,11 +84,12 @@ router.get('/latest', async (req, res) => {
     if (data.Contents.length === 0) {
       return res.json({ videos: [] });
     }
-
+    
     // Construct the video URL
     const videoUrls = data.Contents.map((item) => {
       return `https://${params.Bucket}.s3.amazonaws.com/${item.Key}`;
     });
+    console.log(videoUrls)
 
     res.json({ videos: videoUrls });
   } catch (error) {
