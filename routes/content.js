@@ -92,41 +92,49 @@ router.put('/:id', upload.fields([
       return res.status(404).json({ message: 'Content not found.' });
     }
 
-    // Prepare an object for updated data
+    // Prepare updated data
     const updateData = { title, description };
 
-    // Delete old main image if a new one is uploaded
-    if (req.files.mainImages && content.mainImages) {
-      const oldMainImageKey = content.mainImages.split('Character/')[1];
-      await deleteFileFromS3(oldMainImageKey);
+    // Handle main image replacement
+    if (req.files.mainImages && req.files.mainImages[0]) {
+      if (content.mainImages) {
+        const oldMainImageKey = content.mainImages.split('Character/mainImages/')[1]; // Ensure correct key extraction
+        await deleteFileFromS3(oldMainImageKey);
+      }
       updateData.mainImages = await uploadFile(req.files.mainImages[0], 'mainImages');
     }
 
-    // Delete old images if new ones are uploaded
-    if (req.files.images && content.images.length > 0) {
-      for (const oldImageUrl of content.images) {
-        const oldImageKey = oldImageUrl.split('Character/')[1];
-        await deleteFileFromS3(oldImageKey);
+    // Handle images replacement
+    if (req.files.images && req.files.images.length > 0) {
+      if (content.images && content.images.length > 0) {
+        for (const oldImageUrl of content.images) {
+          const oldImageKey = oldImageUrl.split('Character/images/')[1];
+          await deleteFileFromS3(oldImageKey);
+        }
       }
       updateData.images = await Promise.all(req.files.images.map(file => uploadFile(file, 'images')));
     }
 
-    // Delete old videos if new ones are uploaded
-    if (req.files.videos && content.videos.length > 0) {
-      for (const oldVideoUrl of content.videos) {
-        const oldVideoKey = oldVideoUrl.split('Character/')[1];
-        await deleteFileFromS3(oldVideoKey);
+    // Handle videos replacement
+    if (req.files.videos && req.files.videos.length > 0) {
+      if (content.videos && content.videos.length > 0) {
+        for (const oldVideoUrl of content.videos) {
+          const oldVideoKey = oldVideoUrl.split('Character/videos/')[1];
+          await deleteFileFromS3(oldVideoKey);
+        }
       }
       updateData.videos = await Promise.all(req.files.videos.map(file => uploadFile(file, 'videos')));
     }
-     // Delete the content from the database
-    await Content.findByIdAndDelete(req.params.id);
 
+    // Update the content with new data
+    const updatedContent = await Content.findByIdAndUpdate(id, updateData, { new: true });
+    res.json(updatedContent);
   } catch (error) {
     console.error('Error updating content:', error);
     res.status(500).json({ message: 'Failed to update content.' });
   }
 });
+
 
 // DELETE content and associated files from S3
 router.delete('/:id', async (req, res) => {
